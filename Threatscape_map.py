@@ -2,70 +2,83 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 import requests
-import time
 import pycountry
 
 st.set_page_config(page_title="Threatscape Global Map", layout="wide")
 st.title("🌍 Threatscape: Live Global Cyber Threat Map")
-st.markdown("Real-time IP-based threat indicators via AlienVault OTX and geolocation API")
+st.markdown("Real-time threat reports from AbuseIPDB")
 
-# --- Step 1: Add your OTX API key here ---
-API_KEY = "YOUR_OTX_API_KEY_HERE"  # 🔐 Replace with your actual key
-headers = {"X-OTX-API-KEY": API_KEY}
+# --- Step 1: AbuseIPDB API Setup ---
+API_KEY = "caea84e481aaf415314e925ab7e083aa8f863a104258f8695829cdf892f3ed0c2bc5f1f5bb54965f"
+headers = {"Key": API_KEY, "Accept": "application/json"}
+url = "https://api.abuseipdb.com/api/v2/reports"
 
-# --- Step 2: Request the export feed with authentication ---
-export_url = "https://otx.alienvault.com/api/v1/indicators/export?type=IPv4"
-response = requests.get(export_url, headers=headers)
+# --- Step 2: Fetch recent reports (you can use a sample IP to pull multiple) ---
+params = {
+    "ipAddress": "1.1.1.1",  # abuseIPDB uses an IP input to return recent report patterns
+    "maxAgeInDays": 30,
+    "verbose": True
+}
+
+response = requests.get(url, headers=headers, params=params)
 
 if response.status_code != 200:
-    st.error(f"Failed to load IPv4 data. Status code: {response.status_code}")
+    st.error(f"Failed to fetch data. Status code: {response.status_code}")
     st.text(response.text)
     st.stop()
 
-# --- Step 3: Extract and clean IP list ---
-ip_list = response.text.strip().split("\n")
-st.write(f"🔍 Fetched {len(ip_list)} IPv4 indicators from OTX")
+data = response.json()
 
-# --- Step 4: Limit for geolocation API rate limiting ---
-max_ips = 40
-ip_records = ip_list[:max_ips]
+# --- Step 3: Parse country data from response ---
+# abuseIPDB returns only reports for a given IP, so for now we use the blacklist endpoint instead
+# Instead, we'll switch to a better AbuseIPDB endpoint for broader data:
+blacklist_url = "https://api.abuseipdb.com/api/v2/blacklist"
+params = {
+    "confidenceMinimum": 50,
+    "limit": 1000
+}
+response = requests.get(blacklist_url, headers=headers, params=params)
 
-# --- Step 5: Geolocate IPs using ip-api.com ---
-geo_results = []
-for ip in ip_records:
+if response.status_code != 200:
+    st.error("Failed to load IP blacklist.")
+    st.text(response.text)
+    st.stop()
+
+ips = response.json().get("data", [])
+
+# --- Step 4: Extract country data from IP metadata ---
+countries = []
+for entry in ips:
+    country = entry.get("countryCode")
+    if country:
+        countries.append(country)
+
+if not countries:
+    st.warning("No country data found in threat feed.")
+    st.stop()
+
+# --- Step 5: Convert to DataFrame, map ISO2 to ISO3, and count ---
+country_counts = pd.Series(countries).value_counts().reset_index()
+country_counts.columns = ["ISO2", "Incidents"]
+
+def iso2_to_iso3(code):
     try:
-        geo = requests.get(f"http://ip-api.com/json/{ip}").json()
-        if geo["status"] == "success":
-            geo_results.append(geo["country"])
-        time.sleep(1.5)  # To stay within free rate limits (~45/min)
+        return pycountry.countries.get(alpha_2=code).alpha_3
     except:
-        pass
+        return None
 
-# --- Step 6: Convert to DataFrame and map to ISO codes ---
-if geo_results:
-    df = pd.Series(geo_results, name="Country").value_counts().reset_index()
-    df.columns = ["Country", "Incidents"]
+country_counts["ISO3"] = country_counts["ISO2"].apply(iso2_to_iso3)
+country_counts = country_counts.dropna()
 
-    def to_iso(country_name):
-        try:
-            return pycountry.countries.lookup(country_name).alpha_3
-        except:
-            return None
+# --- Step 6: Plot Choropleth Map ---
+fig = px.choropleth(
+    country_counts,
+    locations="ISO3",
+    color="Incidents",
+    hover_name="ISO2",
+    color_continuous_scale="YlOrRd",
+    title="Live Threat Reports by Country (AbuseIPDB)"
+)
 
-    df["ISO_Code"] = df["Country"].apply(to_iso)
-    df = df.dropna(subset=["ISO_Code"])
-
-    # --- Step 7: Plot world map ---
-    fig = px.choropleth(
-        df,
-        locations="ISO_Code",
-        color="Incidents",
-        hover_name="Country",
-        color_continuous_scale="OrRd",
-        projection="natural earth",
-        title="Live IP-based Threats by Country"
-    )
-    fig.update_layout(margin={"r":0,"t":30,"l":0,"b":0})
-    st.plotly_chart(fig, use_container_width=True)
-else:
-    st.warning("No IPs could be geolocated. Try refreshing later.")
+fig.update_layout(margin={"r":0,"t":30,"l":0,"b":0})
+st.plotly_chart(fig, use_container_width=True)

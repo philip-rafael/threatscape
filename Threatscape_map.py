@@ -9,7 +9,7 @@ st.title("🌍 Threatscape: Live Global Cyber Threat Map")
 st.markdown("Real-time IP-based threat indicators via AlienVault OTX and geolocation API")
 
 # OTX setup
-API_KEY = "YOUR_API_KEY_HERE"  # Replace with your actual key
+API_KEY = "baa0dbe2ff9203d251ccd7371644654d4f7e35db45e82e4db64af7663eb975f4"
 headers = {"X-OTX-API-KEY": API_KEY}
 url = "https://otx.alienvault.com/api/v1/pulses/subscribed"
 

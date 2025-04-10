@@ -13,9 +13,12 @@ st.markdown("Real-time IP-based threat indicators via AlienVault OTX and geoloca
 export_url = "https://otx.alienvault.com/api/v1/indicators/export?type=IPv4"
 
 response = requests.get(export_url)
+
 if response.status_code != 200:
-    st.error("Failed to load IPv4 data from OTX export feed.")
+    st.error(f"Failed to load IPv4 data. Status code: {response.status_code}")
+    st.text(response.text)
     st.stop()
+
 
 # Parse IPs from plain text response
 ip_list = response.text.strip().split("\n")

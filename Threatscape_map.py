@@ -2,71 +2,77 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 import requests
-import pycountry
+import time
 
 st.set_page_config(page_title="Threatscape Global Map", layout="wide")
 st.title("🌍 Threatscape: Live Global Cyber Threat Map")
-st.markdown("Powered by AlienVault OTX")
+st.markdown("Real-time IP-based threat indicators via AlienVault OTX and geolocation API")
 
-# Step 1: Pull data from OTX
-API_KEY = "baa0dbe2ff9203d251ccd7371644654d4f7e35db45e82e4db64af7663eb975f4"
+# OTX setup
+API_KEY = "YOUR_API_KEY_HERE"  # Replace with your actual key
 headers = {"X-OTX-API-KEY": API_KEY}
-
 url = "https://otx.alienvault.com/api/v1/pulses/subscribed"
-response = requests.get(url, headers=headers)
 
+# Fetch data
+response = requests.get(url, headers=headers)
 if response.status_code != 200:
-    st.error("Failed to load threat data from OTX")
+    st.error("Failed to load data from OTX.")
     st.stop()
 
 data = response.json()
 
-# Step 2: Parse data
-records = []
+# Extract IP indicators only
+ip_records = []
 for pulse in data["results"]:
-    country = pulse.get("country", "Unknown")
     for indicator in pulse["indicators"]:
-        records.append({
-            "Country": country,
-            "Type": indicator.get("type"),
-            "Value": indicator.get("indicator")
-        })
+        if indicator.get("type") == "IPv4":
+            ip_records.append(indicator["indicator"])
 
-df = pd.DataFrame(records)
+st.write(f"🔍 Found {len(ip_records)} IPv4 indicators")
 
-# DEBUG: Show what countries we're actually getting
-st.write("Raw country values from OTX:", df["Country"].unique())
+# Limit for free IP geolocation API (~45 per min)
+max_ips = 40
+ip_records = ip_records[:max_ips]
 
-# Step 3: Count incidents per country
-summary = df.groupby("Country").size().reset_index(name="Incidents")
+# Geolocate IPs
+geo_results = []
+for ip in ip_records:
+    try:
+        geo = requests.get(f"http://ip-api.com/json/{ip}").json()
+        if geo["status"] == "success":
+            geo_results.append(geo["country"])
+        time.sleep(1.5)  # to stay within rate limit
+    except:
+        pass
 
-# Optional: Convert country names to ISO codes (simplified demo version)
-# For real use: use pycountry or a lookup table
-country_iso = {
-    "United States": "USA",
-    "Germany": "DEU",
-    "France": "FRA",
-    "United Kingdom": "GBR",
-    "India": "IND",
-    "Russia": "RUS",
-    "Brazil": "BRA",
-    "China": "CHN",
-    "Unknown": "XXX"
-}
-summary["ISO_Code"] = summary["Country"].map(country_iso).fillna("XXX")
+# Convert to DataFrame
+if geo_results:
+    df = pd.Series(geo_results, name="Country").value_counts().reset_index()
+    df.columns = ["Country", "Incidents"]
 
-# Step 4: Plot
-fig = px.choropleth(
-    summary,
-    locations="ISO_Code",
-    color="Incidents",
-    hover_name="Country",
-    color_continuous_scale="Reds",
-    projection="natural earth",
-    title="Live Cyber Threat Indicators by Country (via OTX)"
-)
+    # Map countries to ISO codes
+    import pycountry
+    def to_iso(country_name):
+        try:
+            return pycountry.countries.lookup(country_name).alpha_3
+        except:
+            return None
 
-fig.update_layout(margin={"r":0,"t":30,"l":0,"b":0})
-st.plotly_chart(fig, use_container_width=True)
+    df["ISO_Code"] = df["Country"].apply(to_iso)
+    df = df.dropna(subset=["ISO_Code"])
 
-st.caption("Data from AlienVault OTX API | Displaying active pulse indicators.")
+    # Plot
+    fig = px.choropleth(
+        df,
+        locations="ISO_Code",
+        color="Incidents",
+        hover_name="Country",
+        color_continuous_scale="OrRd",
+        projection="natural earth",
+        title="Live IP-based Threats by Country"
+    )
+
+    fig.update_layout(margin={"r":0,"t":30,"l":0,"b":0})
+    st.plotly_chart(fig, use_container_width=True)
+else:
+    st.warning("No geolocated IPs could be plotted.")

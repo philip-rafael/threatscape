@@ -34,6 +34,9 @@ for pulse in data["results"]:
 
 df = pd.DataFrame(records)
 
+# DEBUG: Show what countries we're actually getting
+st.write("Raw country values from OTX:", df["Country"].unique())
+
 # Step 3: Count incidents per country
 summary = df.groupby("Country").size().reset_index(name="Incidents")
 

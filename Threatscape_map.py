@@ -3,55 +3,45 @@ import pandas as pd
 import plotly.express as px
 import requests
 import time
+import pycountry
 
 st.set_page_config(page_title="Threatscape Global Map", layout="wide")
 st.title("🌍 Threatscape: Live Global Cyber Threat Map")
 st.markdown("Real-time IP-based threat indicators via AlienVault OTX and geolocation API")
 
-# OTX setup
-API_KEY = "baa0dbe2ff9203d251ccd7371644654d4f7e35db45e82e4db64af7663eb975f4"
-headers = {"X-OTX-API-KEY": API_KEY}
-url = "https://otx.alienvault.com/api/v1/pulses/subscribed"
+# --- Step 1: Get list of recent IPv4 indicators from OTX bulk export ---
+export_url = "https://otx.alienvault.com/api/v1/indicators/export?type=IPv4"
 
-# Fetch data
-response = requests.get(url, headers=headers)
+response = requests.get(export_url)
 if response.status_code != 200:
-    st.error("Failed to load data from OTX.")
+    st.error("Failed to load IPv4 data from OTX export feed.")
     st.stop()
 
-data = response.json()
+# Parse IPs from plain text response
+ip_list = response.text.strip().split("\n")
 
-# Extract IP indicators only
-ip_records = []
-for pulse in data["results"]:
-    for indicator in pulse["indicators"]:
-        if indicator.get("type") == "IPv4":
-            ip_records.append(indicator["indicator"])
+st.write(f"🔍 Fetched {len(ip_list)} IPv4 indicators from OTX")
 
-st.write(f"🔍 Found {len(ip_records)} IPv4 indicators")
-
-# Limit for free IP geolocation API (~45 per min)
+# --- Step 2: Limit for rate-limited geolocation ---
 max_ips = 40
-ip_records = ip_records[:max_ips]
+ip_records = ip_list[:max_ips]
 
-# Geolocate IPs
+# --- Step 3: Geolocate each IP using ip-api.com ---
 geo_results = []
 for ip in ip_records:
     try:
         geo = requests.get(f"http://ip-api.com/json/{ip}").json()
         if geo["status"] == "success":
             geo_results.append(geo["country"])
-        time.sleep(1.5)  # to stay within rate limit
+        time.sleep(1.5)  # Respect free rate limit (~45 requests/min)
     except:
         pass
 
-# Convert to DataFrame
+# --- Step 4: Summarise and plot ---
 if geo_results:
     df = pd.Series(geo_results, name="Country").value_counts().reset_index()
     df.columns = ["Country", "Incidents"]
 
-    # Map countries to ISO codes
-    import pycountry
     def to_iso(country_name):
         try:
             return pycountry.countries.lookup(country_name).alpha_3
@@ -61,7 +51,7 @@ if geo_results:
     df["ISO_Code"] = df["Country"].apply(to_iso)
     df = df.dropna(subset=["ISO_Code"])
 
-    # Plot
+    # Choropleth
     fig = px.choropleth(
         df,
         locations="ISO_Code",
@@ -71,8 +61,7 @@ if geo_results:
         projection="natural earth",
         title="Live IP-based Threats by Country"
     )
-
     fig.update_layout(margin={"r":0,"t":30,"l":0,"b":0})
     st.plotly_chart(fig, use_container_width=True)
 else:
-    st.warning("No geolocated IPs could be plotted.")
+    st.warning("No IPs could be geolocated. Try refreshing later.")

@@ -6,7 +6,7 @@ import pycountry
 
 st.set_page_config(page_title="Threatscape Global Map", layout="wide")
 st.title("🌍 Threatscape: Live Global Cyber Threat Map")
-st.markdown("Real-time threat reports from AbuseIPDB")
+st.markdown("This map displays countries reporting high-confidence malicious IP activity, based on AbuseIPDB's live threat feed.")
 
 # --- Step 1: AbuseIPDB API Setup ---
 API_KEY = "caea84e481aaf415314e925ab7e083aa8f863a104258f8695829cdf892f3ed0c2bc5f1f5bb54965f"

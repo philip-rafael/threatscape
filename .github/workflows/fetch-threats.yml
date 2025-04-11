@@ -1,0 +1,37 @@
+```yaml
+name: Fetch Threat Data Daily
+
+on:
+  schedule:
+    - cron: '0 3 * * *'  # Runs daily at 03:00 UTC
+  workflow_dispatch:
+
+jobs:
+  fetch-and-commit:
+    runs-on: ubuntu-latest
+
+    env:
+      API_KEY: ${{ secrets.ABUSEIPDB_KEY }}
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'
+
+      - name: Install requests library
+        run: pip install requests
+
+      - name: Run data fetch script
+        run: python fetch_threat_data.py
+
+      - name: Commit and push updated file
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@users.noreply.github.com"
+          git add cached_threat_data.json
+          git commit -m "🔄 Auto-update threat data [CI]" || echo "No changes to commit"
+          git push

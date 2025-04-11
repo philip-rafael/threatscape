@@ -18,7 +18,7 @@ headers = {"Key": API_KEY, "Accept": "application/json"}
 blacklist_url = "https://api.abuseipdb.com/api/v2/blacklist"
 
 params = {
-    "confidenceMinimum": 50,
+    "confidenceMinimum": 10,
     "limit": 1000
 }
 

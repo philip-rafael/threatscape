@@ -1,4 +1,2 @@
+requests
 streamlit
-pandas
-plotly
-pycountry

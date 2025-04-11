@@ -13,7 +13,7 @@ st.markdown(
 )
 
 # --- Step 1: AbuseIPDB API Setup ---
-API_KEY = "2df847cbf4251df0d253a05c84b3d1ba95e61f7c25a936b97e7b195cb068fee0fe2cea4157b2721f"
+API_KEY = "8efa7227ebadcfaa6a9fa529d1dcccc530d0507c89d46d9218e0c376a9dffa8fc744953b1d9d4d3f"
 headers = {"Key": API_KEY, "Accept": "application/json"}
 blacklist_url = "https://api.abuseipdb.com/api/v2/blacklist"
 

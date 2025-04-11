@@ -10,7 +10,10 @@ if not API_KEY:
     raise ValueError("API_KEY not set in environment variables.")
 
 # --- AbuseIPDB API Setup ---
-headers = {"Key": API_KEY, "Accept": "application/json"}
+headers = {
+    "Key": API_KEY,
+    "Accept": "application/json"
+}
 url = "https://api.abuseipdb.com/api/v2/blacklist"
 params = {
     "confidenceMinimum": 10,
@@ -22,9 +25,12 @@ response = requests.get(url, headers=headers, params=params)
 
 if response.status_code == 200:
     data = response.json()
-    with open("cached_threat_data.json", "w") as f:
+    filename = "cached_threat_data.json"
+    with open(filename, "w") as f:
         json.dump(data, f)
-    print(f"✅ Data saved to cached_threat_data.json at {datetime.utcnow().isoformat()} UTC")
+    print(f"✅ Data saved to {filename} at {datetime.utcnow().isoformat()} UTC")
+    print("📦 File written:", os.path.exists(filename))
+    print("📏 File size:", os.path.getsize(filename), "bytes")
 else:
     print(f"❌ Failed to fetch data. Status code: {response.status_code}")
     print(response.text)

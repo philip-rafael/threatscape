@@ -1,4 +1,3 @@
-```yaml
 name: Fetch Threat Data Daily
 
 on:

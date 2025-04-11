@@ -1,10 +1,12 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
-import requests
 import pycountry
+import json
 from datetime import datetime
+import os
 
+# --- Streamlit Page Setup ---
 st.set_page_config(page_title="Threatscape Global Map", layout="wide")
 st.title("🌍 Threatscape: Live Global Cyber Threat Map")
 st.markdown(
@@ -12,31 +14,18 @@ st.markdown(
     "based on AbuseIPDB's live threat feed."
 )
 
-# --- Step 1: AbuseIPDB API Setup ---
-API_KEY = "8efa7227ebadcfaa6a9fa529d1dcccc530d0507c89d46d9218e0c376a9dffa8fc744953b1d9d4d3f"
-headers = {"Key": API_KEY, "Accept": "application/json"}
-blacklist_url = "https://api.abuseipdb.com/api/v2/blacklist"
+# --- Load cached data ---
+DATA_FILE = "cached_threat_data.json"
 
-params = {
-    "confidenceMinimum": 10,
-    "limit": 1000
-}
-
-response = requests.get(blacklist_url, headers=headers, params=params)
-
-if response.status_code != 200:
-    st.error(f"Failed to fetch data. Status code: {response.status_code}")
-    st.text(response.text)
+if not os.path.exists(DATA_FILE):
+    st.error("⚠️ No threat data available. Please check back later.")
     st.stop()
 
-ips = response.json().get("data", [])
+with open(DATA_FILE, "r") as f:
+    data = json.load(f).get("data", [])
 
-# --- Step 2: Extract country codes from response ---
-countries = []
-for entry in ips:
-    code = entry.get("countryCode")
-    if code:
-        countries.append(code)
+# --- Step 2: Extract country codes ---
+countries = [entry.get("countryCode") for entry in data if entry.get("countryCode")]
 
 if not countries:
     st.warning("No country data found in threat feed.")
@@ -55,7 +44,7 @@ def iso2_to_iso3(code):
 df["ISO3"] = df["ISO2"].apply(iso2_to_iso3)
 df = df.dropna()
 
-# --- Step 4: Plot the map ---
+# --- Step 4: Plot the Map ---
 fig = px.choropleth(
     df,
     locations="ISO3",
@@ -66,13 +55,13 @@ fig = px.choropleth(
     title="Live Threat Reports by Country (AbuseIPDB)"
 )
 
-fig.update_layout(margin={"r":0,"t":30,"l":0,"b":0})
+fig.update_layout(margin={"r":0, "t":30, "l":0, "b":0})
 st.plotly_chart(fig, use_container_width=True)
 
-# --- Step 5: Add source and timestamp ---
-now = datetime.utcnow().strftime("%Y-%m-%d %H:%M UTC")
+# --- Step 5: Footer with timestamp ---
+last_updated = datetime.utcfromtimestamp(os.path.getmtime(DATA_FILE)).strftime("%Y-%m-%d %H:%M UTC")
 st.markdown("---")
 st.markdown(
     f"📊 **Data Source:** [AbuseIPDB - IP Blacklist API](https://www.abuseipdb.com/api.html)  \n"
-    f"⏱️ **Last updated:** {now}"
+    f"⏱️ **Last updated:** {last_updated}"
 )

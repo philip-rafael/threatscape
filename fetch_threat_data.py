@@ -12,7 +12,7 @@ if not API_KEY:
 headers = {"Key": API_KEY, "Accept": "application/json"}
 url = "https://api.abuseipdb.com/api/v2/blacklist"
 params = {
-    "confidenceMinimum": 10,
+    "confidenceMinimum": 50,  # <- FIXED: must be between 25–100
     "limit": 1000
 }
 

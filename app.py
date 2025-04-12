@@ -49,7 +49,7 @@ fig = px.choropleth(
     hover_name="ISO2",
     color_continuous_scale="YlOrRd",
     projection="natural earth",
-    title="Live Threat Reports by Country (AbuseIPDB)"
+    title="Live Reports (AbuseIPDB)"
 )
 
 fig.update_layout(margin={"r":0, "t":30, "l":0, "b":0})

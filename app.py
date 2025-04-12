@@ -51,7 +51,7 @@ fig = px.choropleth(
     hover_name="ISO2",
     color_continuous_scale="YlOrRd",
     projection="natural earth",
-    title="Daily threat intelligence on high-confidence malicious IP activity by country"
+    title="Daily Reports (AbuseIPDB)"
 )
 
 fig.update_layout(margin={"r":0, "t":30, "l":0, "b":0})

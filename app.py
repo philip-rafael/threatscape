@@ -8,11 +8,8 @@ import os
 
 # --- Streamlit Page Setup ---
 st.set_page_config(page_title="Threatscape Global Map", layout="wide")
-st.title("🌍 Threatscape: Live Global Cyber Threat Map")
-st.markdown(
-    "This map displays countries reporting high-confidence malicious IP activity, "
-    "based on AbuseIPDB's live threat feed."
-)
+st.title("🌍 Global Threatscape: Live Cyber Threat Map")
+st.markdown("This map displays countries reporting high-confidence malicious IP activity, based on AbuseIPDB's live threat feed.")
 
 # --- Load cached data ---
 DATA_FILE = "cached_threat_data.json"

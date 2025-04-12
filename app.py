@@ -9,7 +9,7 @@ import os
 # --- Streamlit Page Setup ---
 st.set_page_config(page_title="Threatscape Global Map", layout="wide")
 st.title("🌍 Global Threatscape: Visualising Cyber Threat Activity")
-st.subtitle("Daily threat intelligence on high-confidence malicious IP activity by country")
+st.markdown("Daily threat intelligence on high-confidence malicious IP activity by country")
 
 # --- Load cached data ---
 DATA_FILE = "cached_threat_data.json"

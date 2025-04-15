@@ -62,3 +62,15 @@ st.markdown(
     f"📊 **Data Source:** [AbuseIPDB - IP Blacklist API](https://www.abuseipdb.com/api.html)  \n"
     f"⏱️ **Last updated:** {last_updated}"
 ) 
+
+# --- Step 6: Scroll Fix ---
+import streamlit.components.v1 as components
+
+components.html(
+    """
+    <script>
+        window.scrollTo(0, document.body.scrollHeight);
+    </script>
+    """,
+    height=0,
+)

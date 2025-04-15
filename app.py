@@ -9,9 +9,7 @@ import os
 # --- Streamlit Page Setup ---
 st.set_page_config(page_title="Threatscape Global Map", layout="wide")
 st.title("🌍 Global Threatscape: Visualising Cyber Threat Activity")
-st.markdown(
-    "Daily threat intelligence on high-confidence malicious IP activity by country"
-    )
+st.markdown("Daily threat intelligence on high-confidence malicious IP activity by country")
 
 # --- Load cached data ---
 DATA_FILE = "cached_threat_data.json"
@@ -63,4 +61,4 @@ st.markdown("---")
 st.markdown(
     f"📊 **Data Source:** [AbuseIPDB - IP Blacklist API](https://www.abuseipdb.com/api.html)  \n"
     f"⏱️ **Last updated:** {last_updated}"
-)
+) 

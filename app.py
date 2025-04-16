@@ -56,7 +56,7 @@ fig.update_layout(margin={"r":0, "t":30, "l":0, "b":0})
 st.plotly_chart(fig, use_container_width=True)
 
 # --- Step 5: Footer with timestamp ---
-last_updated = datetime.fromtimestamp(os.path.getmtime(DATA_FILE), datetime.UTC).strftime("%Y-%m-%d %H:%M UTC")
+last_updated = datetime.utcfromtimestamp(os.path.getmtime(DATA_FILE)).strftime("%Y-%m-%d %H:%M UTC")
 st.markdown("---")
 st.markdown(
     f"📊 **Data Source:** [AbuseIPDB - IP Blacklist API](https://www.abuseipdb.com/api.html)  \n"
